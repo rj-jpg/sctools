@@ -134,7 +134,7 @@ def parse_metrics(
     except FileNotFoundError as e:
         print(f"Error: {e}")
 
-    cells = metrics_df.loc[metrics_df['Metric Name'] == 'Estimated number of cells',"Metric Value"].iloc[0]
+    cells = metrics_df.loc[metrics_df['Metric Name'] == 'Cells',"Metric Value"].iloc[0]
     cells = int(cells.replace(",",""))
 
     reads = metrics_df.loc[(metrics_df['Metric Name'] == 'Number of reads') & 
