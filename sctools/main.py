@@ -172,7 +172,6 @@ def create_count_config(
                cells,
                feature_reference,
                vdj_reference,
-               GEX_prefix,
                BCR,
                TCR,
                antibody],

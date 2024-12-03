@@ -6,7 +6,8 @@ authors = ["Rijul <rijul.singhal1@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-crmulti = "sctools.crmulti:app"
+sctools = "sctools.main:app"
+
 
 [tool.poetry.dependencies]
 python = "^3.12"
