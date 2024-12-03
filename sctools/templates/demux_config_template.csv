@@ -1,0 +1,16 @@
+[gene-expression],,
+reference,,
+include-introns,,
+cmo-set,,
+create-bam,,
+,,
+[libraries],,
+fastq_id,fastqs,feature_types
+,,Gene Expression
+,,Multiplexing Capture
+,,
+[samples],,
+sample_id,cmo_ids,
+,,
+,,
+,,
