@@ -67,7 +67,7 @@ def demux(
     sample_reads = dict()
     sample_bamtofastq_cmd = []
     for sample in samples:
-        sample_metrics = parse_metrics(sample, multi_output_dir=library+"_DEMUX")
+        sample_metrics = parse_metrics(sample, multi_output_dir=library+demux_output_suffix)
         sample_reads[sample] = sample_metrics[0]
         sample_cells[sample] = sample_metrics[1]
 
@@ -97,19 +97,19 @@ def demux(
         print("Running command:", " ".join(bamtofq_cmd))
         sp.Popen(bamtofq_cmd)
         # Create cellranger count config files
-        create_count_config(
-            library=library,
-            sample_id=sample,
-            cells=sample_cells[sample],
-            genome_reference=genome_reference,
-            feature_reference=feature_reference,
-            vdj_reference=vdj_reference,
-            GEX_prefix="bamtofastq",
-            BCR="BCR",
-            TCR="TCR",
-            antibody="MC_AB",
-            outdir="configs"
-        )
+        # create_count_config(
+        #     library=library,
+        #     sample_id=sample,
+        #     cells=sample_cells[sample],
+        #     genome_reference=genome_reference,
+        #     feature_reference=feature_reference,
+        #     vdj_reference=vdj_reference,
+        #     GEX_prefix="bamtofastq",
+        #     BCR="BCR",
+        #     TCR="TCR",
+        #     antibody="MC_AB",
+        #     outdir="configs"
+        # )
 
     ### Final cellranger count
     for sample in samples:
@@ -144,13 +144,12 @@ def parse_metrics(
 
 
 def create_count_config(
-        library,
         sample_id,
         genome_reference,
         cells,
         feature_reference = None,
         vdj_reference = None,
-        GEX_prefix="bamtofastq",
+        fastq_dir = None,
         BCR=None,
         TCR=None,
         antibody=None,
@@ -165,6 +164,7 @@ def create_count_config(
                     "USER_CELLS",
                     "USER_FEATURE_REF",
                     "USER_VDJ_REF",
+                    "USER_FASTQ_DIR",
                     "USER_BCL_DIR",
                     "USER_TCL_DIR",
                     "USER_AB_DIR"],
@@ -172,12 +172,59 @@ def create_count_config(
                cells,
                feature_reference,
                vdj_reference,
+               fastq_dir,
                BCR,
                TCR,
                antibody],
         inplace=True
     )
     config.to_csv(outdir+"/"+sample_id+"_config.csv", header = None, index=False)
+
+@app.command()
+def count(
+    cellranger_path: Annotated[str, typer.Option(help="Path to cellranger")] = "$GROUPDIR/$USER/tools/cellranger-9.0.0",
+    demux_path: Annotated[str, typer.Argument(help="Path to the demultiplexed output folder")] = None,
+    demux_config: Annotated[str, typer.Argument(help="Path to the demultiplexing config CSV file")] = None,
+    bamtofastq_dir: Annotated[Path, typer.Argument(help="Path to the bamtofastq output folder")] = "bamtofastq",
+    genome_reference: Annotated[str, typer.Option(help="Path to the genome reference")] = "$GROUPDIR/$USER/projects/scrna/human/references/refdata-gex-GRCh38-2024-A",
+    feature_reference: Annotated[str, typer.Option(help="Path to the feature reference (e.g. Biolegend_feature.csv")] = "$GROUPDIR/$USER/projects/scrna/human/references/Biolegend_feature.csv",
+    vdj_reference: Annotated[str, typer.Option(help="Path to the vdj reference")] = "$GROUPDIR/$USER/projects/scrna/human/references/refdata-cellranger-vdj-GRCh38-alts-ensembl-7.1.0",
+    BCR: Annotated[str, typer.Argument(help="Path to the BCR FASTQs")] = None,
+    TCR: Annotated[str, typer.Argument(help="Path to the TCR FASTQs")] = None,
+    antibody: Annotated[str, typer.Argument(help="Path to the antibody FASTQs")] = None,
+    config_dir: Annotated[str, typer.Argument(help="Path to the output folder for the config files")] = "configs",
+    slurm_mode: Annotated[bool, typer.Option(help="Run cellranger using built-in SLURM mode")] = False,
+    threads: Annotated[int, typer.Option(help="Number of CPU to use")] = 32,
+    memory: Annotated[int, typer.Option(help="Memory to use in GB per CPU")] = 4
+):
+    # 1. Extract info to create config files
+    demux_config_csv = pd.read_csv(demux_config, skip_blank_lines=True, comment = "#")
+    sample_index = list(config_df['[gene-expression]']).index("sample_id")
+    samples = list(config_df.iloc[sample_index+1:,0])        
+    for sample in samples:
+        sample_cells = parse_metrics(sample, multi_output_dir=library+"_DEMUX")[1]
+
+        bamtofastq_subdir = next(os.walk(bamtofastq_dir+"/"+sample))[1]
+        GEX_fastq_dir = ['PLACEHOLDER']
+
+        
+        # 2. Create config files
+
+        create_count_config(
+            sample_id=sample,
+            cells=sample_cells[sample],
+            genome_reference=genome_reference,
+            feature_reference=feature_reference,
+            vdj_reference=vdj_reference,
+            fastq_dir=GEX_fastq_dir,
+            BCR=BCR,
+            TCR=TCR,
+            antibody=antibody,
+            outdir=config_dir
+        )
+
+    
+    
 
 @app.command()
 def count(
