@@ -112,15 +112,15 @@ def demux(
         # )
 
     ### Final cellranger count
-    for sample in samples:
-        count(
-            cellranger_path=cellranger_path,
-            config="configs/"+sample+"_config.csv",
-            sample=sample,
-            threads=threads,
-            memory=memory,
-            slurm_mode=slurm_mode
-        )
+    # for sample in samples:
+    #     count(
+    #         cellranger_path=cellranger_path,
+    #         config="configs/"+sample+"_config.csv",
+    #         sample=sample,
+    #         threads=threads,
+    #         memory=memory,
+    #         slurm_mode=slurm_mode
+    #     )
         
 
 
@@ -128,7 +128,7 @@ def parse_metrics(
     sample,
     multi_output_dir,
 ):
-    base_dir = multi_output_dir + "/outs/per_sample_outs/" + sample + "/metrics_summary.csv"
+    base_dir = multi_output_dir / "outs" / "per_sample_outs" / sample / "metrics_summary.csv"
     try:
         metrics_df = pd.read_csv(base_dir, skip_blank_lines=True, comment = "#")
     except FileNotFoundError as e:
@@ -153,7 +153,7 @@ def create_count_config(
         BCR=None,
         TCR=None,
         antibody=None,
-        outdir="configs"
+        outdir=None
 ):        
     config = pd.read_csv(template_path / "sample_config_template.csv", header=None)
 
@@ -167,31 +167,123 @@ def create_count_config(
                     "USER_BCL_DIR",
                     "USER_TCL_DIR",
                     "USER_ANTIBODY_DIR"],
-        value=[genome_reference,
+        value=[str(genome_reference),
                cells,
-               feature_reference,
-               vdj_reference,
-               fastq_dir,
-               BCR,
-               TCR,
-               antibody],
+               str(feature_reference),
+               str(vdj_reference),
+               str(fastq_dir),
+               str(BCR),
+               str(TCR),
+               str(antibody)],
         inplace=True
     )
-    config.to_csv(outdir+"/"+sample_id+"_config.csv", header = False, index=False)
+    config.to_csv(outdir, header = False, index=False)
 
 @app.command()
-def count(
-    cellranger_path: Annotated[str, typer.Option(help="Path to cellranger")] = "$GROUPDIR/$USER/tools/cellranger-9.0.0",
-    demux_path: Annotated[str, typer.Argument(help="Path to the demultiplexed output folder")] = None,
-    demux_config: Annotated[str, typer.Argument(help="Path to the demultiplexing config CSV file")] = None,
-    bamtofastq_dir: Annotated[Path, typer.Argument(help="Path to the bamtofastq output folder")] = "bamtofastq",
-    genome_reference: Annotated[str, typer.Option(help="Path to the genome reference")] = "$GROUPDIR/$USER/projects/scrna/human/references/refdata-gex-GRCh38-2024-A",
-    feature_reference: Annotated[str, typer.Option(help="Path to the feature reference (e.g. Biolegend_feature.csv")] = "$GROUPDIR/$USER/projects/scrna/human/references/Biolegend_feature.csv",
-    vdj_reference: Annotated[str, typer.Option(help="Path to the vdj reference")] = "$GROUPDIR/$USER/projects/scrna/human/references/refdata-cellranger-vdj-GRCh38-alts-ensembl-7.1.0",
-    BCR: Annotated[str, typer.Argument(help="Path to the BCR FASTQs")] = None,
-    TCR: Annotated[str, typer.Argument(help="Path to the TCR FASTQs")] = None,
-    antibody: Annotated[str, typer.Argument(help="Path to the antibody FASTQs")] = None,
-    config_dir: Annotated[str, typer.Argument(help="Path to the output folder for the config files")] = "configs",
+def crcount(
+    cellranger_path: Annotated[
+        Path, 
+        typer.Option(
+            exists = True,
+            file_okay = False,
+            dir_okay = True,
+            help="Path to cellranger"
+        ),
+    ] = "$GROUPDIR/$USER/tools/cellranger-9.0.0",
+    demux_path: Annotated[
+        Path, 
+        typer.Argument(
+            exists = True,
+            file_okay = False,
+            dir_okay = True,
+            help="Path to the demultiplexed output folder"
+        ),
+    ] = None,
+    demux_config: Annotated[
+        Path, 
+        typer.Argument(
+            exists = True,
+            file_okay = True,
+            dir_okay = False,
+            help="Path to the demultiplexing config CSV file"
+        ),
+    ] = None,
+    bamtofastq_dir: Annotated[
+        Path, 
+        typer.Argument(
+            exists = True,
+            file_okay = False,
+            dir_okay = True,
+            resolve_path = True,
+            help="Path to the bamtofastq output folder"
+        ),
+    ] = Path("bamtofastq"),
+    genome_reference: Annotated[
+        Path, 
+        typer.Option(
+            exists = True,
+            file_okay = False,
+            dir_okay = True,
+            help="Path to the genome reference"
+        ),
+    ] = "$GROUPDIR/$USER/projects/scrna/human/references/refdata-gex-GRCh38-2024-A",
+    feature_reference: Annotated[
+        Path, 
+        typer.Option(
+            exists = True,
+            file_okay = True,
+            dir_okay = False,
+            help="Path to the feature reference (e.g. Biolegend_feature.csv"
+        ),
+    ] = "$GROUPDIR/$USER/projects/scrna/human/references/Biolegend_feature.csv",
+    vdj_reference: Annotated[
+        Path, 
+        typer.Option(
+            exists = True,
+            file_okay = False,
+            dir_okay = True,
+            help="Path to the vdj reference"
+        ),
+    ] = Path("$GROUPDIR/$USER/projects/scrna/human/references/refdata-cellranger-vdj-GRCh38-alts-ensembl-7.1.0"),
+    BCR: Annotated[
+        Path, 
+        typer.Option(
+            exists = True,
+            file_okay = False,
+            dir_okay = True,
+            resolve_path = True,
+            help="Path to the BCR FASTQs"
+        ),
+    ] = Path("BCR"),
+    TCR: Annotated[
+        Path, 
+        typer.Option(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            resolve_path = True,
+            help="Path to the TCR FASTQs"
+        ),
+    ] = Path("TCR"),
+    antibody: Annotated[
+        Path, 
+        typer.Option(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            resolve_path = True,
+            help="Path to the antibody FASTQs"
+        ),
+    ] = Path("MC_AB"),
+    config_dir: Annotated[
+        Path, 
+        typer.Option(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            help="Path to the output folder for the config files"
+        ),
+    ] = Path("configs"),
     slurm_mode: Annotated[bool, typer.Option(help="Run cellranger using built-in SLURM mode")] = False,
     threads: Annotated[int, typer.Option(help="Number of CPU to use")] = 32,
     memory: Annotated[int, typer.Option(help="Memory to use in GB per CPU")] = 4
@@ -206,7 +298,7 @@ def count(
         subdirs = [x for x in (bamtofastq_dir / sample).iterdir() if x.is_dir()]        
         subdirs = dict(zip(subdirs, [get_dir_size(x) for x in subdirs]))
         GEX_fastq_dir = max(subdirs.items(), key=lambda item: item[1])[0]
-
+        config_path = str(config_dir) + "/" + sample + "_config.csv"
         
         # 2. Create config files
 
@@ -220,12 +312,12 @@ def count(
             BCR=BCR,
             TCR=TCR,
             antibody=antibody,
-            outdir=config_dir
+            outdir=config_path
         )
 
         count_cmd(
             cellranger_path=cellranger_path,
-            config=config_dir+"/"+sample+"_config.csv",
+            config=config_path,
             sample=sample,
             slurm_mode=slurm_mode,
             threads=threads,
@@ -243,16 +335,15 @@ def count_cmd(
     memory: Annotated[int, typer.Option(help="Memory to use in GB per CPU")] = 4,
 ):
     cellranger_cmd = [
-        cellranger_path+"/cellranger",
+        cellranger_path / "cellranger",
         "multi",
         "--id", sample,
         "--csv", config,
-        "--localcores", str(threads),
-        "--localmem", str(memory),
     ]
     if slurm_mode:
         cellranger_cmd.append("--jobmode=slurm")
     else:
+        cellranger_cmd = cellranger_cmd + ["--localcores", str(threads), "--localmem", str(memory)]
         slurm_cmd = ["srun","--job-name="+sample+"_count",
                      "--ntasks=1", "--cpus-per-task="+str(threads),
                      "--mem="+str(memory)+"G", "--time=1:00:00",
@@ -260,6 +351,7 @@ def count_cmd(
                      "--error="+sample+"_count_%j.out"]
         cellranger_cmd = slurm_cmd+cellranger_cmd
     
+    print(" ".join([str(x) for x in cellranger_cmd]))
     sp.Popen(cellranger_cmd)
 
     
