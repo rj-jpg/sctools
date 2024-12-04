@@ -155,8 +155,7 @@ def create_count_config(
         antibody=None,
         outdir="configs"
 ):        
-    config = pd.read_csv(template_path / "sample_config_template.csv", 
-                         skip_blank_lines=True, comment = "#", header=None)
+    config = pd.read_csv(template_path / "sample_config_template.csv", header=None)
 
 
     config.replace(
@@ -167,7 +166,7 @@ def create_count_config(
                     "USER_FASTQ_DIR",
                     "USER_BCL_DIR",
                     "USER_TCL_DIR",
-                    "USER_AB_DIR"],
+                    "USER_ANTIBODY_DIR"],
         value=[genome_reference,
                cells,
                feature_reference,
@@ -178,7 +177,7 @@ def create_count_config(
                antibody],
         inplace=True
     )
-    config.to_csv(outdir+"/"+sample_id+"_config.csv", header = None, index=False)
+    config.to_csv(outdir+"/"+sample_id+"_config.csv", header = False, index=False)
 
 @app.command()
 def count(
@@ -199,20 +198,21 @@ def count(
 ):
     # 1. Extract info to create config files
     demux_config_csv = pd.read_csv(demux_config, skip_blank_lines=True, comment = "#")
-    sample_index = list(config_df['[gene-expression]']).index("sample_id")
-    samples = list(config_df.iloc[sample_index+1:,0])        
+    sample_index = list(demux_config_csv['[gene-expression]']).index("sample_id")
+    samples = list(demux_config_csv.iloc[sample_index+1:,0])        
     for sample in samples:
-        sample_cells = parse_metrics(sample, multi_output_dir=library+"_DEMUX")[1]
+        sample_cells = parse_metrics(sample, multi_output_dir=demux_path)[1]
 
-        bamtofastq_subdir = next(os.walk(bamtofastq_dir+"/"+sample))[1]
-        GEX_fastq_dir = ['PLACEHOLDER']
+        subdirs = [x for x in (bamtofastq_dir / sample).iterdir() if x.is_dir()]        
+        subdirs = dict(zip(subdirs, [get_dir_size(x) for x in subdirs]))
+        GEX_fastq_dir = max(subdirs.items(), key=lambda item: item[1])[0]
 
         
         # 2. Create config files
 
         create_count_config(
             sample_id=sample,
-            cells=sample_cells[sample],
+            cells=sample_cells,
             genome_reference=genome_reference,
             feature_reference=feature_reference,
             vdj_reference=vdj_reference,
@@ -223,11 +223,18 @@ def count(
             outdir=config_dir
         )
 
-    
-    
+        count_cmd(
+            cellranger_path=cellranger_path,
+            config=config_dir+"/"+sample+"_config.csv",
+            sample=sample,
+            slurm_mode=slurm_mode,
+            threads=threads,
+            memory=memory
+        )
 
-@app.command()
-def count(
+    
+    
+def count_cmd(
     cellranger_path: Annotated[str, typer.Option(help="Path to cellranger")] = "$GROUPDIR/$USER/tools/cellranger-9.0.0",
     config: Annotated[str, typer.Argument(help="Path to the config file")] = "configs/config.csv",
     sample: Annotated[str, typer.Argument(help="The sample to process")] = None,
@@ -253,6 +260,15 @@ def count(
                      "--error="+sample+"_count_%j.out"]
         cellranger_cmd = slurm_cmd+cellranger_cmd
     
-    sp.run(cellranger_cmd)
+    sp.Popen(cellranger_cmd)
 
     
+def get_dir_size(path='.'):
+    total = 0
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.is_file():
+                total += entry.stat().st_size
+            elif entry.is_dir():
+                total += get_dir_size(entry.path)
+    return total
