@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 from typing_extensions import Annotated
 
-app = typer.Typer()
+app = typer.Typer()s
 template_path = (Path(__file__) / '../templates' ).resolve()
 
 # Python CLI
@@ -323,7 +323,7 @@ def count_cmd(
         "--csv", config,
     ]
     if slurm_mode:
-        cellranger_cmd = ["srun"] + cellranger_cmd + ["--jobmode=slurm"]
+        cellranger_cmd = ["srun"] + cellranger_cmd + ["--jobmode=slurm","&"]
     else:
         cellranger_cmd = cellranger_cmd + ["--localcores", str(threads), "--localmem", str(memory)]
         slurm_cmd = ["srun","--job-name="+sample+"_count",
@@ -331,7 +331,7 @@ def count_cmd(
                      "--mem="+str(memory)+"G", "--time=1:00:00",
                      "--output="+sample+"_count_%j.out",
                      "--error="+sample+"_count_%j.out"]
-        cellranger_cmd = slurm_cmd+cellranger_cmd
+        cellranger_cmd = slurm_cmd+cellranger_cmd+["&"]
     
     print(" ".join([str(x) for x in cellranger_cmd]))
     sp.Popen(cellranger_cmd)
