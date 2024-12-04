@@ -96,31 +96,6 @@ def demux(
 
         print("Running command:", " ".join(bamtofq_cmd))
         sp.Popen(bamtofq_cmd)
-        # Create cellranger count config files
-        # create_count_config(
-        #     library=library,
-        #     sample_id=sample,
-        #     cells=sample_cells[sample],
-        #     genome_reference=genome_reference,
-        #     feature_reference=feature_reference,
-        #     vdj_reference=vdj_reference,
-        #     GEX_prefix="bamtofastq",
-        #     BCR="BCR",
-        #     TCR="TCR",
-        #     antibody="MC_AB",
-        #     outdir="configs"
-        # )
-
-    ### Final cellranger count
-    # for sample in samples:
-    #     count(
-    #         cellranger_path=cellranger_path,
-    #         config="configs/"+sample+"_config.csv",
-    #         sample=sample,
-    #         threads=threads,
-    #         memory=memory,
-    #         slurm_mode=slurm_mode
-    #     )
         
 
 
@@ -144,7 +119,7 @@ def parse_metrics(
 
 
 def create_count_config(
-        sample_id,
+        library,
         genome_reference,
         cells,
         feature_reference = None,
@@ -164,9 +139,12 @@ def create_count_config(
                     "USER_FEATURE_REF",
                     "USER_VDJ_REF",
                     "USER_FASTQ_DIR",
-                    "USER_BCL_DIR",
-                    "USER_TCL_DIR",
-                    "USER_ANTIBODY_DIR"],
+                    "USER_BCR_DIR",
+                    "USER_TCR_DIR",
+                    "USER_ANTIBODY_DIR",
+                    "USER_BCR_SAMPLE",
+                    "USER_TCR_SAMPLE",
+                    "USER_ANTIBODY_SAMPLE"],
         value=[str(genome_reference),
                cells,
                str(feature_reference),
@@ -174,13 +152,17 @@ def create_count_config(
                str(fastq_dir),
                str(BCR),
                str(TCR),
-               str(antibody)],
+               str(antibody),
+               library+"B",
+               library+"T",
+               library+"F"],
         inplace=True
     )
     config.to_csv(outdir, header = False, index=False)
 
 @app.command()
 def crcount(
+    library: Annotated[str,typer.Argument(help="Library name")] = None,
     cellranger_path: Annotated[
         Path, 
         typer.Option(
@@ -303,7 +285,7 @@ def crcount(
         # 2. Create config files
 
         create_count_config(
-            sample_id=sample,
+            library=library,
             cells=sample_cells,
             genome_reference=genome_reference,
             feature_reference=feature_reference,
