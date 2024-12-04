@@ -323,7 +323,7 @@ def count_cmd(
         "--csv", config,
     ]
     if slurm_mode:
-        cellranger_cmd = ["srun"] + cellranger_cmd + ["--jobmode=slurm","&"]
+        cellranger_cmd = cellranger_cmd + ["--jobmode=slurm"]
     else:
         cellranger_cmd = cellranger_cmd + ["--localcores", str(threads), "--localmem", str(memory)]
         slurm_cmd = ["srun","--job-name="+sample+"_count",
