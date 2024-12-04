@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 from typing_extensions import Annotated
 
-app = typer.Typer(add_completion=False)
+app = typer.Typer()
 template_path = (Path(__file__) / '../templates' ).resolve()
 
 # Python CLI
