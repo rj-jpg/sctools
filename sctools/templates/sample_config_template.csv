@@ -12,8 +12,8 @@ reference,USER_FEATURE_REF,,,
 reference,USER_VDJ_REF,,,
 ,,,,
 [libraries],,,,
-fastq_id,fastqs,lanes,feature_types,subsample_rate
-bamtofastq,USER_FASTQ_DIR,4,Gene Expression,
-USER_BCR_SAMPLE,USER_BCR_DIR,4,VDJ-B,
-USER_TCR_SAMPLE,USER_TCR_DIR,4,VDJ-T,
-USER_ANTIBODY_SAMPLE,USER_ANTIBODY_DIR,4,Antibody Capture,
+fastq_id,fastqs,feature_types,subsample_rate
+bamtofastq,USER_FASTQ_DIR,Gene Expression,
+USER_BCR_SAMPLE,USER_BCR_DIR,VDJ-B,
+USER_TCR_SAMPLE,USER_TCR_DIR,VDJ-T,
+USER_ANTIBODY_SAMPLE,USER_ANTIBODY_DIR,Antibody Capture,
