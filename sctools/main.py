@@ -1,4 +1,5 @@
-import cellranger_utils
+import sctools.cellranger_utils as cr_utils
+import sctools.cellbender_utils as cb_utils
 import typer
 import os
 import pkgutil
@@ -6,12 +7,12 @@ import pandas as pd
 import numpy as np
 import subprocess as sp
 import io
+import datetime
 from pathlib import Path
 from typing import Optional
 from typing_extensions import Annotated
 
 app = typer.Typer()
-template_path = (Path(__file__) / '../templates' ).resolve()
 
 # Python CLI
 
@@ -66,7 +67,6 @@ def demux(
     samples = list(config_df.iloc[sample_index+1:,0])
     sample_cells = dict()
     sample_reads = dict()
-    sample_bamtofastq_cmd = []
     for sample in samples:
         sample_metrics = parse_metrics(sample, multi_output_dir=Path(library+demux_output_suffix))
         sample_reads[sample] = sample_metrics[0]
@@ -216,7 +216,7 @@ def crcount(
     sample_index = list(demux_config_csv['[gene-expression]']).index("sample_id")
     samples = list(demux_config_csv.iloc[sample_index+1:,0])        
     for sample in samples:
-        sample_cells = parse_metrics(sample, multi_output_dir=demux_path)[1]
+        sample_cells = cr_utils.parse_metrics(sample, multi_output_dir=demux_path)[1]
 
         subdirs = [x for x in (bamtofastq_dir / sample).iterdir() if x.is_dir()]        
         subdirs = dict(zip(subdirs, [get_dir_size(x) for x in subdirs]))
@@ -225,7 +225,7 @@ def crcount(
         
         # 2. Create config files
 
-        create_count_config(
+        cr_utils.create_count_config(
             library=library,
             cells=sample_cells,
             genome_reference=genome_reference,
@@ -238,7 +238,7 @@ def crcount(
             outdir=config_path
         )
 
-        count_cmd(
+        cr_utils.count_cmd(
             cellranger_path=cellranger_path,
             config=config_path,
             sample=sample,
@@ -246,3 +246,41 @@ def crcount(
             threads=threads,
             memory=memory
         )
+
+@app.command()
+def cellbender(
+    conda_env: Annotated[Optional[str], typer.Option(help = "Name of cellbender conda environment for your user")] = "cellbender",
+    sample: Annotated[str, typer.Argument(help = "Sample name. This should correspond to the sample folder in the specified 'library_dir'")] = None,
+    library_dir: Annotated[Path, typer.Argument(
+        help = "Path to the raw multiplexed library that contains this sample",
+        dir_okay = True, file_okay = False, exists = True
+    )] = None,
+    output_dir: Annotated[Path, typer.Option(
+        help = "Path to the output parent directory for the cellbender results",
+        dir_okay = True, exists = True
+    )] = Path("/groups/ag2239_gp/projects/scrna/human/cellbender"),
+    slurm_time: Annotated[Optional[str], typer.Option(help = "Time for the slurm job")] = "03:00:00",
+    slurm_mem: Annotated[Optional[int], typer.Option(help = "Memory for the slurm job")] = 4,
+):
+    # 1. Extract info to create config files
+    sample_dir = library_dir / sample
+    sample_cells = cr_utils.parse_metrics(sample, sample_dir)[1]
+    
+    formatted_date = datetime.date.today().strftime("%Y_%m_%d")
+    output_dir_full = output_dir / sample / (sample+"_"+formatted_date)
+    output_dir_full.mkdir(parents=True, exist_ok=True)
+
+    os.chdir(output_dir_full)
+    
+    cb_utils.create_cellbender_slurm(
+        conda_env=conda_env,
+        raw_h5 = sample_dir / 'outs' / 'multi' / 'count' / 'raw_feature_bc_matrix.h5',
+        output_h5 = output_dir_full / 'cellbender_output_filtered.h5',
+        expected_cells = sample_cells,
+        slurm_job = sample + "_cellbender",
+        slurm_time = slurm_time,
+        slurm_mem = slurm_mem,
+        output_slurm_file = "cellbender.slurm"
+    )
+
+
