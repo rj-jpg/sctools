@@ -283,4 +283,4 @@ def cellbender(
         output_slurm_file = "cellbender.slurm"
     )
 
-
+    sp.Popen(["sbatch", "cellbender.slurm"])
