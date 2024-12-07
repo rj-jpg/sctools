@@ -270,10 +270,12 @@ def cellbender(
     output_dir_full = output_dir / sample / (sample+"_"+formatted_date)
     output_dir_full.mkdir(parents=True, exist_ok=True)
     
+    raw_h5_path = sample_dir.resolve() / 'outs' / 'multi' / 'count' / 'raw_feature_bc_matrix.h5'
+
     os.chdir(output_dir_full)
     cb_utils.create_cellbender_slurm(
         conda_env=conda_env,
-        raw_h5 = sample_dir.resolve() / 'outs' / 'multi' / 'count' / 'raw_feature_bc_matrix.h5',
+        raw_h5 = raw_h5_path.resolve(),
         output_h5 = output_dir_full / 'cellbender_output_filtered.h5',
         expected_cells = sample_cells,
         slurm_job = sample + "_cellbender",

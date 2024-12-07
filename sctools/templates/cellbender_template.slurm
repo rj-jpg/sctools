@@ -11,7 +11,9 @@
 
 ##Load the CUDA module
 module load cuda
+module load conda
 
+conda init
 source activate base
 conda activate USER_CONDA_ENV
 
