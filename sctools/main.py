@@ -269,12 +269,11 @@ def cellbender(
     formatted_date = datetime.date.today().strftime("%Y_%m_%d")
     output_dir_full = output_dir / sample / (sample+"_"+formatted_date)
     output_dir_full.mkdir(parents=True, exist_ok=True)
-
-    os.chdir(output_dir_full)
     
+    os.chdir(output_dir_full)
     cb_utils.create_cellbender_slurm(
         conda_env=conda_env,
-        raw_h5 = sample_dir / 'outs' / 'multi' / 'count' / 'raw_feature_bc_matrix.h5',
+        raw_h5 = sample_dir.resolve() / 'outs' / 'multi' / 'count' / 'raw_feature_bc_matrix.h5',
         output_h5 = output_dir_full / 'cellbender_output_filtered.h5',
         expected_cells = sample_cells,
         slurm_job = sample + "_cellbender",
@@ -283,4 +282,5 @@ def cellbender(
         output_slurm_file = "cellbender.slurm"
     )
 
+    os.chdir(output_dir_full)
     sp.Popen(["sbatch", "cellbender.slurm"])

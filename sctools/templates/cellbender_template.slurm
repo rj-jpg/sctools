@@ -12,7 +12,7 @@
 ##Load the CUDA module
 module load cuda
 
-conda init
+source activate base
 conda activate USER_CONDA_ENV
 
 cellbender remove-background \
