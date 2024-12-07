@@ -26,7 +26,7 @@ def create_cellbender_slurm(
         "USER_CONDA_ENV",
         "USER_RAW_MATRIX_FILE",
         "USER_OUTPUT_MATRIX_FILE",
-        "USER_EXPECTED_CELL_COUNT",
+        # "USER_EXPECTED_CELL_COUNT",
         "USER_JOB_NAME",
         "USER_TIME",
         "USER_MEM"
@@ -36,7 +36,7 @@ def create_cellbender_slurm(
         conda_env,
         str(raw_h5),
         str(output_h5),
-        str(expected_cells),
+        # str(expected_cells),
         slurm_job,
         slurm_time,
         str(slurm_mem) + "G"

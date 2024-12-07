@@ -20,5 +20,5 @@ conda activate USER_CONDA_ENV
 cellbender remove-background \
         --cuda \
         --input USER_RAW_MATRIX_FILE \
-        --expected-cells USER_EXPECTED_CELL_COUNT \
+        # --expected-cells USER_EXPECTED_CELL_COUNT \
         --output USER_OUTPUT_MATRIX_FILE

@@ -261,10 +261,14 @@ def cellbender(
     )] = Path("/groups/ag2239_gp/projects/scrna/human/cellbender"),
     slurm_time: Annotated[Optional[str], typer.Option(help = "Time for the slurm job")] = "03:00:00",
     slurm_mem: Annotated[Optional[int], typer.Option(help = "Memory for the slurm job")] = 4,
+    use_expected_cells = False,
 ):
     # 1. Extract info to create config files
     sample_dir = library_dir / sample
-    sample_cells = cr_utils.parse_metrics(sample, sample_dir)[1]
+    if use_expected_cells:
+        sample_cells = cr_utils.parse_metrics(sample, sample_dir)[1]
+    else:
+        sample_cells = None
     
     formatted_date = datetime.date.today().strftime("%Y_%m_%d")
     output_dir_full = output_dir / sample / (sample+"_"+formatted_date)
