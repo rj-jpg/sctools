@@ -68,7 +68,7 @@ def demux(
     sample_cells = dict()
     sample_reads = dict()
     for sample in samples:
-        sample_metrics = parse_metrics(sample, multi_output_dir=Path(library+demux_output_suffix))
+        sample_metrics = cr_utils.parse_metrics(sample, multi_output_dir=Path(library+demux_output_suffix))
         sample_reads[sample] = sample_metrics[0]
         sample_cells[sample] = sample_metrics[1]
 
