@@ -219,7 +219,7 @@ def crcount(
         sample_cells = cr_utils.parse_metrics(sample, multi_output_dir=demux_path)[1]
 
         subdirs = [x for x in (bamtofastq_dir / sample).iterdir() if x.is_dir()]        
-        subdirs = dict(zip(subdirs, [get_dir_size(x) for x in subdirs]))
+        subdirs = dict(zip(subdirs, [cr_utils.get_dir_size(x) for x in subdirs]))
         GEX_fastq_dir = max(subdirs.items(), key=lambda item: item[1])[0]
         config_path = str(config_dir) + "/" + sample + "_config.csv"
         
