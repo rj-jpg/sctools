@@ -67,12 +67,24 @@ def demux(
     samples = list(config_df.iloc[sample_index+1:,0])
     sample_cells = dict()
     sample_reads = dict()
+
+    import os
+
+    # Ensure output directory exists
+    Path("bamtofastq").mkdir(parents=True, exist_ok=True)
+
     for sample in samples:
+        output_path = Path(f"bamtofastq/{sample}")
+        
+        if output_path.exists() and any(output_path.iterdir()):
+            print(f"[SKIP] bamtofastq output for sample {sample} already exists at {output_path}. Skipping.")
+            continue
+
         sample_metrics = cr_utils.parse_metrics(sample, multi_output_dir=Path(library+demux_output_suffix))
         sample_reads[sample] = sample_metrics[0]
         sample_cells[sample] = sample_metrics[1]
 
-        sp.run(["echo","Creating job for sample: " + sample + "..."])
+        sp.run(["echo", "Creating job for sample: " + sample + "..."])
 
         # Round up reads to ensure you're counting everything
         reads_str = str(sample_reads[sample])
@@ -88,15 +100,16 @@ def demux(
             f"--output=bamtofastq/{sample}.out",
             f"--error=bamtofastq/{sample}.err",
             f"--job-name={sample}_bamtofastq",
-            f"{cellranger_path}/lib/bin/bamtofastq",  # The actual bamtofastq command starts here
-            "--nthreads=8",  # Matches --cpus-per-task
+            f"{cellranger_path}/lib/bin/bamtofastq",
+            "--nthreads=8",
             "--reads-per-fastq", str(rounded_reads),
             f"{library}_DEMUX/outs/per_sample_outs/{sample}/count/sample_alignments.bam",
-            f"bamtofastq/{sample}"
+            str(output_path)
         ]
 
         print("Running command:", " ".join(bamtofq_cmd))
         sp.Popen(bamtofq_cmd)
+
         
 
 
