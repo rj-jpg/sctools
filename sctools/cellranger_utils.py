@@ -33,43 +33,55 @@ def create_count_config(
         library,
         genome_reference,
         cells,
-        feature_reference = None,
-        vdj_reference = None,
-        fastq_dir = None,
+        feature_reference=None,
+        vdj_reference=None,
+        fastq_dir=None,
         BCR=None,
         TCR=None,
         antibody=None,
         outdir=None
-):        
+):
+    # Load the config template
     config = pd.read_csv(template_path / "sample_config_template.csv", header=None)
 
+    # Drop rows for BCR, TCR, or antibody if values are None
+    drop_rows = []
 
+    if BCR is None or not Path(BCR).exists() or not any(Path(BCR).iterdir()):
+        drop_rows += config[config.apply(lambda row: "USER_BCR" in ",".join(row.astype(str)), axis=1)].index.tolist()
+
+    if TCR is None or not Path(TCR).exists() or not any(Path(TCR).iterdir()):
+        drop_rows += config[config.apply(lambda row: "USER_TCR" in ",".join(row.astype(str)), axis=1)].index.tolist()
+
+    if antibody is None or not Path(antibody).exists() or not any(Path(antibody).iterdir()):
+        drop_rows += config[config.apply(lambda row: "USER_ANTIBODY" in ",".join(row.astype(str)), axis=1)].index.tolist()
+
+    config.drop(index=drop_rows, inplace=True)
+
+    # Replace placeholder values
     config.replace(
-        to_replace=["USER_REF",
-                    "USER_CELLS",
-                    "USER_FEATURE_REF",
-                    "USER_VDJ_REF",
-                    "USER_FASTQ_DIR",
-                    "USER_BCR_DIR",
-                    "USER_TCR_DIR",
-                    "USER_ANTIBODY_DIR",
-                    "USER_BCR_SAMPLE",
-                    "USER_TCR_SAMPLE",
-                    "USER_ANTIBODY_SAMPLE"],
-        value=[str(genome_reference),
-               cells,
-               str(feature_reference),
-               str(vdj_reference),
-               str(fastq_dir),
-               str(BCR),
-               str(TCR),
-               str(antibody),
-               library+"B",
-               library+"T",
-               library+"F"],
+        to_replace=[
+            "USER_REF", "USER_CELLS", "USER_FEATURE_REF", "USER_VDJ_REF",
+            "USER_FASTQ_DIR", "USER_BCR_DIR", "USER_TCR_DIR", "USER_ANTIBODY_DIR",
+            "USER_BCR_SAMPLE", "USER_TCR_SAMPLE", "USER_ANTIBODY_SAMPLE"
+        ],
+        value=[
+            str(genome_reference),
+            cells,
+            str(feature_reference) if feature_reference else "",
+            str(vdj_reference) if vdj_reference else "",
+            str(fastq_dir),
+            str(BCR) if BCR else "",
+            str(TCR) if TCR else "",
+            str(antibody) if antibody else "",
+            library + "B",
+            library + "T",
+            library + "F"
+        ],
         inplace=True
     )
-    config.to_csv(outdir, header = False, index=False)
+
+    config.to_csv(outdir, header=False, index=False)
 
 
 def count_cmd(

@@ -231,13 +231,20 @@ def crcount(
     for sample in samples:
         sample_cells = cr_utils.parse_metrics(sample, multi_output_dir=demux_path)[1]
 
-        subdirs = [x for x in (bamtofastq_dir / sample).iterdir() if x.is_dir()]        
+        subdirs = [x for x in (bamtofastq_dir / sample).iterdir() if x.is_dir()]
         subdirs = dict(zip(subdirs, [cr_utils.get_dir_size(x) for x in subdirs]))
         GEX_fastq_dir = max(subdirs.items(), key=lambda item: item[1])[0]
-        config_path = str(config_dir) + "/" + sample + "_config.csv"
-        
-        # 2. Create config files
+        config_path = str(config_dir / f"{sample}_config.csv")
 
+        # === NEW: Only pass optional libraries if they exist and are non-empty ===
+        def valid_path(p: Path):
+            return p.exists() and any(p.iterdir())
+
+        BCR_path = BCR if valid_path(BCR) else None
+        TCR_path = TCR if valid_path(TCR) else None
+        antibody_path = antibody if valid_path(antibody) else None
+
+        # === Create config file ===
         cr_utils.create_count_config(
             library=library,
             cells=sample_cells,
@@ -245,12 +252,13 @@ def crcount(
             feature_reference=feature_reference,
             vdj_reference=vdj_reference,
             fastq_dir=GEX_fastq_dir,
-            BCR=BCR,
-            TCR=TCR,
-            antibody=antibody,
+            BCR=BCR_path,
+            TCR=TCR_path,
+            antibody=antibody_path,
             outdir=config_path
         )
 
+        # === Run count ===
         cr_utils.count_cmd(
             cellranger_path=cellranger_path,
             config=config_path,
@@ -259,6 +267,7 @@ def crcount(
             threads=threads,
             memory=memory
         )
+
 
 @app.command()
 def cellbender(
