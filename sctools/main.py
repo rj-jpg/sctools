@@ -237,12 +237,21 @@ def crcount(
         config_path = str(config_dir / f"{sample}_config.csv")
 
         # === NEW: Only pass optional libraries if they exist and are non-empty ===
-        def valid_path(p: Path):
-            return p.exists() and any(p.iterdir())
+        def valid_path(p, label=""):
+            if p is None:
+                print(f"[INFO] Skipping {label}: not provided.")
+                return False
+            elif not Path(p).exists():
+                print(f"[INFO] Skipping {label}: path {p} does not exist.")
+                return False
+            elif not any(Path(p).iterdir()):
+                print(f"[INFO] Skipping {label}: path {p} exists but is empty.")
+                return False
+            return True
 
-        BCR_path = BCR if valid_path(BCR) else None
-        TCR_path = TCR if valid_path(TCR) else None
-        antibody_path = antibody if valid_path(antibody) else None
+        BCR_path = BCR if valid_path(BCR, "BCR") else None
+        TCR_path = TCR if valid_path(TCR, "TCR") else None
+        antibody_path = antibody if valid_path(antibody, "Antibody") else None
 
         # === Create config file ===
         cr_utils.create_count_config(
