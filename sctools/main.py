@@ -182,35 +182,35 @@ def crcount(
         ),
     ] = Path("$GROUPDIR/$USER/projects/scrna/human/references/refdata-cellranger-vdj-GRCh38-alts-ensembl-7.1.0"),
     BCR: Annotated[
-        Path, 
+        Optional[Path], 
         typer.Option(
-            exists = True,
-            file_okay = False,
-            dir_okay = True,
-            resolve_path = True,
+            exists=False,
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
             help="Path to the BCR FASTQs"
         ),
-    ] = Path("BCR"),
+    ] = None,
     TCR: Annotated[
-        Path, 
+        Optional[Path], 
         typer.Option(
-            exists=True,
+            exists=False,
             file_okay=False,
             dir_okay=True,
-            resolve_path = True,
+            resolve_path=True,
             help="Path to the TCR FASTQs"
         ),
-    ] = Path("TCR"),
+    ] = None,
     antibody: Annotated[
-        Path, 
+        Optional[Path], 
         typer.Option(
-            exists=True,
+            exists=False,
             file_okay=False,
             dir_okay=True,
-            resolve_path = True,
+            resolve_path=True,
             help="Path to the antibody FASTQs"
         ),
-    ] = Path("MC_AB"),
+    ] = None,
     config_dir: Annotated[
         Path, 
         typer.Option(
